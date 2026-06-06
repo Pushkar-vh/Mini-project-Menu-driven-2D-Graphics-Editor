@@ -1,29 +1,15 @@
-/*
- * ============================================================================
- *  Mini Project: Menu-Driven 2D Graphics Editor
- * ============================================================================
- *  A console-based 2D graphics editor that uses a character array as canvas.
- *  Canvas is filled with '_' (underscore) and objects are drawn with '*'.
- *  Supports drawing, deleting, and modifying circles, rectangles, lines,
- *  and triangles.
- * ============================================================================
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
 
-/* ── Canvas dimensions ───────────────────────────────────────────────────── */
 #define CANVAS_ROWS 40
 #define CANVAS_COLS 80
 #define BLANK_CHAR  '_'
 #define DRAW_CHAR   '*'
 
-/* ── Maximum number of objects stored ─────────────────────────────────────── */
 #define MAX_OBJECTS 50
 
-/* ── Object type enumeration ─────────────────────────────────────────────── */
 typedef enum {
     OBJ_NONE,
     OBJ_CIRCLE,
@@ -32,28 +18,15 @@ typedef enum {
     OBJ_TRIANGLE
 } ObjectType;
 
-/* ── Object data structure ───────────────────────────────────────────────── */
 typedef struct {
     ObjectType type;
-    /* Circle:    params[0]=cx, params[1]=cy, params[2]=radius              */
-    /* Rectangle: params[0]=top-left x, params[1]=top-left y,               */
-    /*            params[2]=width, params[3]=height                         */
-    /* Line:      params[0]=x1, params[1]=y1, params[2]=x2, params[3]=y2   */
-    /* Triangle:  params[0]=x1, params[1]=y1, params[2]=x2, params[3]=y2,  */
-    /*            params[4]=x3, params[5]=y3                                */
     int params[6];
 } GraphObject;
 
-/* ── Global state ────────────────────────────────────────────────────────── */
 char canvas[CANVAS_ROWS][CANVAS_COLS];
 GraphObject objects[MAX_OBJECTS];
 int objectCount = 0;
 
-/* ══════════════════════════════════════════════════════════════════════════ */
-/*                          CANVAS OPERATIONS                               */
-/* ══════════════════════════════════════════════════════════════════════════ */
-
-/* Clear the canvas – fill every cell with BLANK_CHAR */
 void clearCanvas(void) {
     int i, j;
     for (i = 0; i < CANVAS_ROWS; i++)
@@ -61,16 +34,13 @@ void clearCanvas(void) {
             canvas[i][j] = BLANK_CHAR;
 }
 
-/* Display the canvas with a border */
 void displayCanvas(void) {
     int i, j;
 
-    /* Top border */
     printf("\n  +");
     for (j = 0; j < CANVAS_COLS; j++) printf("-");
     printf("+\n");
 
-    /* Canvas rows with side borders */
     for (i = 0; i < CANVAS_ROWS; i++) {
         printf("%2d|", i);
         for (j = 0; j < CANVAS_COLS; j++)
@@ -78,12 +48,10 @@ void displayCanvas(void) {
         printf("|\n");
     }
 
-    /* Bottom border */
     printf("  +");
     for (j = 0; j < CANVAS_COLS; j++) printf("-");
     printf("+\n");
 
-    /* Column number hints (tens and units) */
     printf("   ");
     for (j = 0; j < CANVAS_COLS; j++) printf("%d", (j / 10) % 10);
     printf("\n   ");
@@ -91,23 +59,16 @@ void displayCanvas(void) {
     printf("\n");
 }
 
-/* Set a pixel on the canvas if within bounds */
 void setPixel(int row, int col) {
     if (row >= 0 && row < CANVAS_ROWS && col >= 0 && col < CANVAS_COLS)
         canvas[row][col] = DRAW_CHAR;
 }
 
-/* ══════════════════════════════════════════════════════════════════════════ */
-/*                          DRAWING PRIMITIVES                              */
-/* ══════════════════════════════════════════════════════════════════════════ */
-
-/* ── Draw a circle using the Midpoint Circle Algorithm ───────────────────── */
 void drawCircle(int cx, int cy, int radius) {
     int x = 0, y = radius;
     int d = 1 - radius;
 
     while (x <= y) {
-        /* Plot all 8 symmetric octant points */
         setPixel(cy + y, cx + x);
         setPixel(cy + y, cx - x);
         setPixel(cy - y, cx + x);
@@ -127,22 +88,18 @@ void drawCircle(int cx, int cy, int radius) {
     }
 }
 
-/* ── Draw a rectangle (outline) ──────────────────────────────────────────── */
 void drawRectangle(int topX, int topY, int width, int height) {
     int i;
-    /* Top and bottom horizontal edges */
     for (i = topX; i <= topX + width; i++) {
         setPixel(topY, i);
         setPixel(topY + height, i);
     }
-    /* Left and right vertical edges */
     for (i = topY; i <= topY + height; i++) {
         setPixel(i, topX);
         setPixel(i, topX + width);
     }
 }
 
-/* ── Draw a line using Bresenham's Line Algorithm ────────────────────────── */
 void drawLine(int x1, int y1, int x2, int y2) {
     int dx = abs(x2 - x1);
     int dy = abs(y2 - y1);
@@ -160,18 +117,12 @@ void drawLine(int x1, int y1, int x2, int y2) {
     }
 }
 
-/* ── Draw a triangle (three connected lines) ─────────────────────────────── */
 void drawTriangle(int x1, int y1, int x2, int y2, int x3, int y3) {
     drawLine(x1, y1, x2, y2);
     drawLine(x2, y2, x3, y3);
     drawLine(x3, y3, x1, y1);
 }
 
-/* ══════════════════════════════════════════════════════════════════════════ */
-/*                     REDRAW ALL OBJECTS ON CANVAS                         */
-/* ══════════════════════════════════════════════════════════════════════════ */
-
-/* Wipe canvas and re-render every stored object */
 void redrawAll(void) {
     int i;
     clearCanvas();
@@ -200,11 +151,6 @@ void redrawAll(void) {
     }
 }
 
-/* ══════════════════════════════════════════════════════════════════════════ */
-/*                          HELPER UTILITIES                                */
-/* ══════════════════════════════════════════════════════════════════════════ */
-
-/* Print the name of an object type */
 const char* objectTypeName(ObjectType t) {
     switch (t) {
         case OBJ_CIRCLE:    return "Circle";
@@ -215,7 +161,6 @@ const char* objectTypeName(ObjectType t) {
     }
 }
 
-/* Print details of a single object */
 void printObjectInfo(int index) {
     GraphObject *o = &objects[index];
     printf("  [%d] %s  |  ", index + 1, objectTypeName(o->type));
@@ -246,7 +191,6 @@ void printObjectInfo(int index) {
     printf("\n");
 }
 
-/* List all objects currently stored */
 void listObjects(void) {
     int i;
     if (objectCount == 0) {
@@ -258,10 +202,6 @@ void listObjects(void) {
     for (i = 0; i < objectCount; i++)
         printObjectInfo(i);
 }
-
-/* ══════════════════════════════════════════════════════════════════════════ */
-/*                           ADD OBJECT                                     */
-/* ══════════════════════════════════════════════════════════════════════════ */
 
 void addObject(void) {
     int choice;
@@ -354,10 +294,6 @@ void addObject(void) {
            objectTypeName(obj.type), objectCount);
 }
 
-/* ══════════════════════════════════════════════════════════════════════════ */
-/*                          DELETE OBJECT                                   */
-/* ══════════════════════════════════════════════════════════════════════════ */
-
 void deleteObject(void) {
     int id, i;
 
@@ -380,7 +316,6 @@ void deleteObject(void) {
     printf("  >> Deleting %s (Object #%d)...\n",
            objectTypeName(objects[id - 1].type), id);
 
-    /* Shift remaining objects left to fill the gap */
     for (i = id - 1; i < objectCount - 1; i++)
         objects[i] = objects[i + 1];
 
@@ -388,10 +323,6 @@ void deleteObject(void) {
     redrawAll();
     printf("  >> Object deleted. %d object(s) remaining.\n", objectCount);
 }
-
-/* ══════════════════════════════════════════════════════════════════════════ */
-/*                          MODIFY OBJECT                                   */
-/* ══════════════════════════════════════════════════════════════════════════ */
 
 void modifyObject(void) {
     int id;
@@ -488,10 +419,6 @@ void modifyObject(void) {
     printf("\n  >> Object #%d modified successfully!\n", id);
 }
 
-/* ══════════════════════════════════════════════════════════════════════════ */
-/*                          TRANSLATE OBJECT                                */
-/* ══════════════════════════════════════════════════════════════════════════ */
-
 void translateObject(void) {
     int id, dx, dy;
     GraphObject *o;
@@ -543,10 +470,6 @@ void translateObject(void) {
     redrawAll();
     printf("\n  >> Object #%d translated by (%d, %d).\n", id, dx, dy);
 }
-
-/* ══════════════════════════════════════════════════════════════════════════ */
-/*                          SCALE OBJECT                                    */
-/* ══════════════════════════════════════════════════════════════════════════ */
 
 void scaleObject(void) {
     int id;
@@ -617,10 +540,6 @@ void scaleObject(void) {
     printf("\n  >> Object #%d scaled by factor %.2f.\n", id, factor);
 }
 
-/* ══════════════════════════════════════════════════════════════════════════ */
-/*                          CLEAR ALL OBJECTS                               */
-/* ══════════════════════════════════════════════════════════════════════════ */
-
 void clearAll(void) {
     char confirm;
     printf("\n  >> Are you sure you want to clear ALL objects? (y/n): ");
@@ -633,10 +552,6 @@ void clearAll(void) {
         printf("  >> Cancelled.\n");
     }
 }
-
-/* ══════════════════════════════════════════════════════════════════════════ */
-/*                            MAIN MENU                                     */
-/* ══════════════════════════════════════════════════════════════════════════ */
 
 void printMenu(void) {
     printf("\n");
@@ -655,10 +570,6 @@ void printMenu(void) {
     printf("  +------------------------------------------+\n");
     printf("  Enter your choice: ");
 }
-
-/* ══════════════════════════════════════════════════════════════════════════ */
-/*                              MAIN                                        */
-/* ══════════════════════════════════════════════════════════════════════════ */
 
 int main(void) {
     int choice;
